@@ -1,27 +1,3 @@
-;;; shm-contextual-menu.el --- IntelliJ like context menus for Structured Haskell Mode
-
-;; Copyright (c) 2013 Chris Done. All rights reserved.
-
-;; Author:    Eric Jones
-;; Created:   2-Feb-2014
-;; Version:   1.0.2
-;; Keywords:  development, haskell, structured
-;; Stability: unstable
-
-;; This file is distributed in the hope that it will be useful,
-;; but WITHOUT ANY WARRANTY; without even the implied warranty of
-;; MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
-;; GNU General Public License for more details.
-
-;; You should have received a copy of the GNU General Public License
-;; along with this program.  If not, see <http://www.gnu.org/licenses/>.
-
-;;; Commentary:
-
-;; Adds a contextual menu system to structured haskell mode
-
-;;; Code:
-
 (require 'shm)
 (require 'shm-test)
 (require 'popup)
