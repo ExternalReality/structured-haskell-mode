@@ -31,6 +31,7 @@
 (require 'shm-customizations)
 (require 'shm-ast-documentation)
 (require 'shm-evaporate)
+(require 'popup)
 
 (require 'cl)
 
@@ -85,6 +86,9 @@ of SHM that this is a common use-case worth taking into account.")
 (defvar shm-map
   (let ((map (make-sparse-keymap)))
     ;; Insertion
+    (if (eq window-system 'x) 
+        (define-key map (kbd "M-<return>") 'shm/present-actions-for-node)
+        (define-key map (kbd "M-]") 'shm/present-actions-for-node))
     (define-key map (kbd "\"") 'shm/double-quote)
     (define-key map (kbd "(") 'shm/open-paren)
     (define-key map (kbd "M-(") 'shm/wrap-parens)
