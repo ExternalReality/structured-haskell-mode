@@ -12,7 +12,13 @@
 (defun shm-module-name-p (node-cons)
   (string= "ModuleName" node-cons))
 
-
+(defun shm-has-parent-with-matching-type-p (node-pair)
+  (let* ((current (cdr node-pair))
+         (parent-pair (shm-node-parent node-pair (shm-node-type current)))
+         (parent (cdr parent-pair)))
+    (if parent
+        (if (string= (shm-node-type current)
+                     (shm-node-type parent)) t))))
 
 (defun shm/present-actions-for-node ()
   "Display menu of possible actions for node"
