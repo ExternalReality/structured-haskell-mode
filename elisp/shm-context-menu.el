@@ -35,6 +35,7 @@
                       (shm-item-for-module-name)))))
     (if menu (progn (shm-invoke-action-for-menu-item (popup-menu* menu))))))
 
+
 (defun shm-item-for-import-decl ()
   (list (popup-make-item "✎ qualify import" :value "qualify import")))
 
@@ -42,7 +43,7 @@
   (list (popup-make-item "⚒ raise" :value "raise child")))
 
 (defun shm-item-for-module-name ()
-  (list (popup-make-item "✈ visit module" :value "visit module definition")))
+  (list (popup-make-item "✈ visit module"  :value "visit module definition")))
 
 (defun shm-item-for-top-level-type-decl ()
   (list (popup-make-item "✎ add type constraint" :value "add type constraint")))

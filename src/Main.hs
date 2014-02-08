@@ -13,6 +13,7 @@ import Data.Data
 import Data.Maybe
 import Language.Haskell.Exts.Annotated
 import System.Environment
+import Temporary.API
 
 -- | A generic Dynamic-like constructor -- but more convenient to
 -- write and pattern match on.
@@ -37,13 +38,22 @@ main :: IO ()
 main = do
   code <- getContents
   action:typ:_ <- getArgs
-  outputWith action typ code
+  let act = fromMaybe (error "unknown action") (fromString action)
+  outputWith act typ code
+
+data Action = Check | Parse | Lint
+     
+fromString :: String -> Maybe Action
+fromString s | s == "check"  = Just Check
+             | s == "parse"  = Just Parse
+             | s == "lint"   = Just Lint
+             | otherwise     = Nothing
 
 -- | Output some result with the given action (check/parse/etc.),
 -- parsing the given type of AST node. In the past, the type was any
 -- kind of AST node. Today, it's just a "decl" which is covered by
 -- 'parseTopLevel'.
-outputWith :: String -> String -> String -> IO ()
+outputWith :: Action -> String -> String -> IO ()
 outputWith action typ code =
   case typ of
     "decl" ->
@@ -51,15 +61,36 @@ outputWith action typ code =
     _ -> error "Unknown parser type."
 
 -- | Output AST info for the given Haskell code.
-output :: String -> Parser -> String -> IO ()
+output :: Action -> Parser -> String -> IO ()
 output action parser code =
   case parser parseMode code of
     ParseFailed _ e -> error e
-    ParseOk (D ast) ->
-      case action of
-        "check" -> return ()
-        "parse" -> putStrLn ("[" ++ concat (genHSE ast) ++ "]")
-        _       -> error "unknown action"
+    ParseOk (D ast) -> runAction action ast code
+
+runAction :: Data a => Action -> a -> String -> IO ()
+runAction Check _ _      = return ()
+runAction Parse ast _    = putStrLn ("[" ++ concat (genHSE ast) ++ "]")
+runAction Lint _ code = do
+  ideas <- genIdeas code
+  if length ideas > 0 
+     then putStrLn $  "[" ++ concatMap serializeIdea ideas ++ "]"
+     else return ()
+
+serializeIdea ::  Idea -> String
+serializeIdea idea = 
+  case ideaTo idea of
+    Just to  -> "[" ++ "\"" ++ show (ideaSeverity idea) ++ "\"" 
+                    ++ "\"" ++ ideaFrom idea ++ "\"" 
+                    ++ "\"" ++ to ++ "\""  ++ "]"
+    Nothing  -> ""
+
+genIdeas :: String -> IO [Idea] 
+genIdeas code =  do 
+  (parseFlags, classifications, hint) <- autoSettings
+  eitherErrorModule <- parseModuleEx parseFlags "" (Just code)
+  case eitherErrorModule of
+     Left _    -> error "error parsing code" 
+     Right msi -> return $ applyHints classifications hint [msi]
 
 -- | An umbrella parser to parse:
 --
