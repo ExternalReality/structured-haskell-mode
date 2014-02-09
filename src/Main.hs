@@ -42,7 +42,8 @@ main = do
   outputWith act typ code
 
 data Action = Check | Parse | Lint
-     
+            deriving Eq
+
 fromString :: String -> Maybe Action
 fromString s | s == "check"  = Just Check
              | s == "parse"  = Just Parse
@@ -64,7 +65,9 @@ outputWith action typ code =
 output :: Action -> Parser -> String -> IO ()
 output action parser code =
   case parser parseMode code of
-    ParseFailed _ e -> error e
+    ParseFailed _    e -> if action == Lint
+                            then putStrLn "[]"
+                            else error e                
     ParseOk (D ast) -> runAction action ast code
 
 runAction :: Data a => Action -> a -> String -> IO ()
