@@ -74,15 +74,25 @@ runAction Lint _ code = do
   ideas <- genIdeas code
   if length ideas > 0 
      then putStrLn $  "[" ++ concatMap serializeIdea ideas ++ "]"
-     else return ()
+     else putStrLn "[]" 
 
 serializeIdea ::  Idea -> String
 serializeIdea idea = 
   case ideaTo idea of
-    Just to  -> "[" ++ "\"" ++ show (ideaSeverity idea) ++ "\"" 
-                    ++ "\"" ++ ideaFrom idea ++ "\"" 
-                    ++ "\"" ++ to ++ "\""  ++ "]"
+    Just to  -> "[" ++ " \"" ++ show (ideaSeverity idea) ++ "\" "
+                    ++  " \"" ++ findSuggestion (ideaHint idea) ++ "\" "
+                    ++ " \"" ++ ideaFrom idea ++ "\" " 
+                    ++ " \"" ++ to ++ "\" "  ++ "]"
     Nothing  -> ""
+
+-- FIXME: memoize, efficient data structure, i18n, get complete list from hlint code.
+findSuggestion :: String -> String
+findSuggestion i = fromMaybe "Error: No suggestion string mapping yet" $ 
+                   lookup i [ ("Redundant lambda", "remove redundant lambda")
+                            , ("Avoid lambda", "move lambda to top level")
+                            , ("Collapse lambdas", "collapse nested lambdas") 
+                            , ("Redundant bracket", "remove redundant bracket")
+                            ]
 
 genIdeas :: String -> IO [Idea] 
 genIdeas code =  do 

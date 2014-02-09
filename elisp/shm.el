@@ -31,7 +31,7 @@
 (require 'shm-customizations)
 (require 'shm-ast-documentation)
 (require 'shm-evaporate)
-(require 'popup)
+
 
 (require 'cl)
 
@@ -336,6 +336,30 @@ parses."
                                    "decl"
                                  type))))
       (string= "" (buffer-string)))))
+
+
+(defun shm-lint-ast (type start end)
+  "Get refactor suggestions for the region of TYPE from START to END."
+  (let ((message-log-max nil)
+        (buffer (current-buffer)))
+    (when (> end (1+ start))
+      (with-temp-buffer
+        (let ((temp-buffer (current-buffer)))
+          (with-current-buffer buffer
+            (condition-case e
+                (call-process-region start
+                                     end
+                                     shm-program-name
+                                     nil
+                                     temp-buffer
+                                     nil
+                                     "lint"
+                                     type)
+              ((file-error)
+               (error "Unable to find structured-haskell-mode executable! See README for help.")))))
+        (read (buffer-string))))))
+
+
 
 (defun shm-get-nodes (ast start end)
   "Get the nodes of the given AST.
