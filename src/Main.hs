@@ -76,17 +76,23 @@ runAction Parse ast _    = putStrLn ("[" ++ concat (genHSE ast) ++ "]")
 runAction Lint _ code = do
   ideas <- genIdeas code
   if length ideas > 0 
-     then putStrLn $  "[" ++ concatMap serializeIdea ideas ++ "]"
+     then putStrLn $ "[" ++ (concat $ serializeIdea <$> ideas) ++ "]" 
      else putStrLn "[]" 
 
 serializeIdea ::  Idea -> String
 serializeIdea idea = 
   case ideaTo idea of
-    Just to  -> "[" ++ " \"" ++ show (ideaSeverity idea) ++ "\" "
-                    ++  " \"" ++ findSuggestion (ideaHint idea) ++ "\" "
-                    ++ " \"" ++ ideaFrom idea ++ "\" " 
-                    ++ " \"" ++ to ++ "\" "  ++ "]"
+    Just to  -> filter (/= ',') $ show (ideaContent to (ideaSpan idea))
     Nothing  -> ""
+ where ideaContent to SrcSpan{..} =  [ show (ideaSeverity idea) 
+                                     , findSuggestion (ideaHint idea)
+                                     , ideaFrom idea 
+                                     , to
+                                     , show srcSpanStartLine
+                                     , show srcSpanStartColumn
+                                     , show srcSpanEndLine
+                                     , show srcSpanEndColumn
+                                     ]
 
 -- FIXME: memoize, efficient data structure, i18n, get complete list from hlint code.
 findSuggestion :: String -> String

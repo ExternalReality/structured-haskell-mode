@@ -66,16 +66,62 @@
 (defun shm-invoke-hlint-suggestion (refactor)
   "Replace the current node with the suggestion from the (REFACTOR)."
   (let* ((current-node (shm-current-node))
-         (start (shm-node-start current-node))
-         (end (shm-node-end current-node)))
+         (start (shm-refactor-start current-node refactor))
+         (end (shm-refactor-end current-node refactor)))
     (save-excursion
        (delete-region start end)
        (goto-char start)      
        (insert (elt refactor 3)))))
 
+(defun shm-refactor-start (current-node refactor)
+  "Get the starting position of the (REFACTOR) relative to the currently selected node."
+  (let ((start (shm-node-start current-node))
+        (rsl (shm-start-line-refactor refactor))                
+        (rsc (shm-start-column-refactor refactor)))
+    (save-excursion
+      (goto-char start)
+      (when (> rsl 0) (forward-line rsl))
+      (forward-char rsc)
+      (point))))
+
+(defun shm-refactor-end (current-node refactor)
+  "Get the end position of the (REFACTOR) relative to the currently selected node."
+  (let ((start (shm-node-start current-node))
+        (rel (shm-end-line-refactor refactor))                
+        (rec (shm-end-column-refactor refactor)))
+    (save-excursion
+      (goto-char start)
+      (when (> rel 0) (forward-line rel))
+      (forward-char rec)
+      (point))))
+
+(defun shm-start-column-refactor (refactor)
+  "Get the starting column of the (REFACTOR) which is relative to the context in which it was found."
+  (- (string-to-number (elt refactor 5)) 1))
+
+(defun shm-end-column-refactor (refactor)
+  "Get the end column of the (REFACTOR) which is relative to the context in which it was found."
+  (- (string-to-number (elt refactor 7)) 1))
+
+(defun shm-start-line-refactor (refactor)
+  "Get the starting line of the (REFACTOR) which is relative to the context in which it was found."
+  (- (string-to-number (elt refactor 4)) 1))
+
+(defun shm-end-line-refactor (refactor)
+  "Get the end line of the (REFACTOR) which is relative to the context in which it was found."
+  (- (string-to-number (elt refactor 6)) 1))
+
+(defun refactor-name (refactor)
+ "Get the name of (REFACTOR)."
+  (elt refactor 1))
+ 
+(defun shm-start-refactor-line (refactor)
+  "Get the starting line of (REFACTOR) relative to the context in which it was found."
+  (elt refactor 4))
+
 (defun shm-item-for-refactor (refactor)
   "Create the menu item for a particular (REFACTOR)."
-  (popup-make-item (concat "⚒ " (elt refactor 1)) :value (cons "hlint suggestion"  refactor)))
+  (popup-make-item (concat "⚒ " (refactor-name refactor)) :value (cons "hlint suggestion" refactor)))
 
 (defun shm-item-for-import-decl ()
   (list (popup-make-item "✎ qualify import" :value "qualify import")))
@@ -100,7 +146,7 @@
 (defun selected-item-value-p (value match)
  "Extract String from (VALUE) and check for string equality against (MATCH)."
  (or (and (stringp value) (string= value match))
-     (string= (car value) match)))
+     (and (listp value) (string= (car value) match))))
 
 (defun invoke-with-suggestion (function &optional arg)
   "Invoke (FUNCTION) with on (ARG) and show its key binding in mini buffer if it has one."
