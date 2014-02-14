@@ -2,3 +2,7 @@ TAGS
 dist/
 .dir-locals.el
 *.elc
+.cabal-sandbox/
+cabal.sandbox.config
+.cabal
+*.orig
