@@ -4,49 +4,19 @@
 
 ;;; Code:
 (require 'shm)
+(require 'shm-queries)
+(require 'shm-refactor)
 (require 'popup)
 
 (if (eq window-system 'x)
     (define-key shm-map (kbd "M-<return>") 'shm/present-actions-for-node)
   (define-key shm-map (kbd "M-]") 'shm/present-actions-for-node))
 
-(defun shm-get-refactors (current-node)
-  "Get a vector of possible refactorings for the (CURRENT-NODE)."
-  (shm-lint-ast "decl"
-                (shm-node-start current-node)
-                (shm-node-end current-node)))
-
-(defun shm-import-decl-p (node-cons)
-  (string= "ImportDecl" node-cons))
-
-(defun shm-module-name-p (node-cons)
-  (string= "ModuleName" node-cons))
-
-(defun shm-has-parent-with-matching-type-p (node-pair)
-  (let* ((current (cdr node-pair))
-         (parent-pair (shm-node-parent node-pair (shm-node-type current)))
-         (parent (cdr parent-pair)))
-    (if parent
-        (if (string= (shm-node-type current)
-                     (shm-node-type parent)) t))))
-
-(defun shm-get-parent-top-level-decl (node-pair)
-  (shm-node-parent node-pair "Decl SrcSpanInfo"))
-
 (defun shm/collapse-nested-lambda ()
   (let* ((current-node (shm-current-node))
          (refactors (shm-get-refactors current-node))
          (refactor (shm-find-refactor-by-name refactors "collapse nested lambdas")))
     (when refactor (shm-invoke-hlint-suggestion refactor))))
-
-(defun shm-find-refactor-by-name (refactors name)
-  (setq refactor nil)
-  (setq num 0)
-  (while (and (< num (length refactors))
-              (not (string= (refactor-name refactor) name)))
-    (setq refactor (elt refactors num))
-    (setq num (1+ num)))
-  (if (string= (refactor-name refactor) name) refactor nil))
      
 (defun shm/present-actions-for-node ()
   "Display menu of possible actions for node."
@@ -76,9 +46,6 @@
               (shm-invoke-action-for-menu-item (popup-menu* menu))
             (setq shm-parsing-timer
                   (run-with-idle-timer shm-idle-timeout t 'shm-reparsing-timer)))))))
-
-(defun shm-node-lambda-p (node)
-  (string= (shm-node-cons node) "Lambda"))
 
 (defun shm/move-lambda-to-top-level ()
   (let* ((function-name (read-from-minibuffer "function name: "))
@@ -116,10 +83,6 @@
           (lambda-body (match-string 2 syntax)))
       (cons (chomp lambda-args) (chomp lambda-body)))))
 
-(defun shm-refactors-available-p (refactors)
-  "Check to see if the (REFACTORS) vector is populated."
-  (if (> (length refactors) 0) t))
-
 (defun shm-items-for-refactors (refactors)
   "Create a popup menu items from (REFACTORS)."
   (mapcar 'shm-item-for-refactor refactors))
@@ -133,48 +96,6 @@
       (delete-region start end)
       (goto-char start)      
       (insert (elt refactor 3)))))
-
-(defun shm-refactor-start (current-node refactor)
-  "Get the starting position of the (REFACTOR) relative to the currently selected node."
-  (let ((start (shm-node-start current-node))
-        (rsl (shm-start-line-refactor refactor))                
-        (rsc (shm-start-column-refactor refactor)))
-    (save-excursion
-      (goto-char start)
-      (when (> rsl 0) (forward-line rsl))
-      (forward-char rsc)
-      (point))))
-
-(defun shm-refactor-end (current-node refactor)
-  "Get the end position of the (REFACTOR) relative to the currently selected node."
-  (let ((start (shm-node-start current-node))
-        (rel (shm-end-line-refactor refactor))                
-        (rec (shm-end-column-refactor refactor)))
-    (save-excursion
-      (goto-char start)
-      (when (> rel 0) (forward-line rel))
-      (forward-char rec)
-      (point))))
-
-(defun shm-start-column-refactor (refactor)
-  "Get the starting column of the (REFACTOR) which is relative to the context in which it was found."
-  (- (string-to-number (elt refactor 5)) 1))
-
-(defun shm-end-column-refactor (refactor)
-  "Get the end column of the (REFACTOR) which is relative to the context in which it was found."
-  (- (string-to-number (elt refactor 7)) 1))
-
-(defun shm-start-line-refactor (refactor)
-  "Get the starting line of the (REFACTOR) which is relative to the context in which it was found."
-  (- (string-to-number (elt refactor 4)) 1))
-
-(defun shm-end-line-refactor (refactor)
-  "Get the end line of the (REFACTOR) which is relative to the context in which it was found."
-  (- (string-to-number (elt refactor 6)) 1))
-
-(defun refactor-name (refactor)
-  "Get the name of (REFACTOR)."
-  (elt refactor 1))
 
 (defun shm-start-refactor-line (refactor)
   "Get the starting line of (REFACTOR) relative to the context in which it was found."
@@ -209,6 +130,7 @@
         ((selected-item-value-p item-value "add type constraint") (invoke-with-suggestion 'shm/modify-type-constraint))))
 
 (defun selected-item-value-p (value match)
+  ;;Basically check to see if the value selected by the menu matches a given string
   "Extract String from (VALUE) and check for string equality against (MATCH)."
   (or (and (stringp value) (string= value match))
       (and (listp value) (string= (car value) match))))
