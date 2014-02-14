@@ -33,6 +33,21 @@
 (defun shm-get-parent-top-level-decl (node-pair)
   (shm-node-parent node-pair "Decl SrcSpanInfo"))
 
+(defun shm/collapse-nested-lambda ()
+  (let* ((current-node (shm-current-node))
+         (refactors (shm-get-refactors current-node))
+         (refactor (shm-find-refactor-by-name refactors "collapse nested lambdas")))
+    (when refactor (shm-invoke-hlint-suggestion refactor))))
+
+(defun shm-find-refactor-by-name (refactors name)
+  (setq refactor nil)
+  (setq num 0)
+  (while (and (< num (length refactors))
+              (not (string= (refactor-name refactor) name)))
+    (setq refactor (elt refactors num))
+    (setq num (1+ num)))
+  (if (string= (refactor-name refactor) name) refactor nil))
+     
 (defun shm/present-actions-for-node ()
   "Display menu of possible actions for node."
   (interactive)
