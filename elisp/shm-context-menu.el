@@ -8,6 +8,13 @@
 (require 'shm-refactor)
 (require 'popup)
 
+(defconst qualify-import "qualify import")
+(defconst raise-child "raise child")
+(defconst visit-module-definition "visit module definition")
+(defconst hlint-suggestion "hlint suggestion")
+(defconst create-top-level-function-from-lambda "create top level function from lambda")
+(defconst add-type-constraint "add type constraint")
+
 (if (eq window-system 'x)
     (define-key shm-map (kbd "M-<return>") 'shm/present-actions-for-node)
   (define-key shm-map (kbd "M-]") 'shm/present-actions-for-node))
@@ -103,31 +110,31 @@
 
 (defun shm-item-for-refactor (refactor)
   "Create the menu item for a particular (REFACTOR)."
-  (popup-make-item (concat "⚒ " (refactor-name refactor)) :value (cons "hlint suggestion" refactor)))
+  (popup-make-item (concat "⚒ " (refactor-name refactor)) :value (cons hlint-suggestion refactor)))
 
 (defun shm-item-for-import-decl ()
-  (popup-make-item "✎ qualify import" :value "qualify import"))
+  (popup-make-item "✎ qualify import" :value qualify-import))
 
 (defun shm-item-for-child-nodes-with-matching-parent ()
-  (popup-make-item "⚒ raise" :value "raise child"))
+  (popup-make-item "⚒ raise" :value raise-child))
 
 (defun shm-item-for-module-name ()
-  (popup-make-item "✈ visit module"  :value "visit module definition"))
+  (popup-make-item "✈ visit module" :value visit-module-definition))
 
 (defun shm-item-for-top-level-type-decl ()
-  (popup-make-item "✎ add type constraint" :value "add type constraint"))
+  (popup-make-item "✎ add type constraint" :value add-type-constraint))
 
 (defun shm-item-for-lambda ()
-  (popup-make-item (concat "⚒ " "create top-level function from lambda") :value "create top-level from lambda"))
+  (popup-make-item (concat "⚒ " "create top-level function from lambda") :value create-top-level-function-from-lambda))
 
 (defun shm-invoke-action-for-menu-item (item-value)
   "Invoke function on (ITEM-VALUE) chosen from the context menu."
-  (cond ((selected-item-value-p item-value "qualify import") (invoke-with-suggestion 'shm/qualify-import))
-        ((selected-item-value-p item-value "raise child") (invoke-with-suggestion 'shm/raise))
-        ((selected-item-value-p item-value "visit module definition") (invoke-with-suggestion 'haskell-mode-tag-find))
-        ((selected-item-value-p item-value "hlint suggestion") (invoke-with-suggestion 'shm-invoke-hlint-suggestion (cdr item-value)))
-        ((selected-item-value-p item-value "create top-level from lambda") (invoke-with-suggestion 'shm/move-lambda-to-top-level))
-        ((selected-item-value-p item-value "add type constraint") (invoke-with-suggestion 'shm/modify-type-constraint))))
+  (cond ((selected-item-value-p item-value qualify-import) (invoke-with-suggestion 'shm/qualify-import))
+        ((selected-item-value-p item-value raise-child) (invoke-with-suggestion 'shm/raise))
+        ((selected-item-value-p item-value visit-module-definition) (invoke-with-suggestion 'haskell-mode-tag-find))
+        ((selected-item-value-p item-value hlint-suggestion) (invoke-with-suggestion 'shm-invoke-hlint-suggestion (cdr item-value)))
+        ((selected-item-value-p item-value create-top-level-function-from-lambda) (invoke-with-suggestion 'shm/move-lambda-to-top-level))
+        ((selected-item-value-p item-value add-type-constraint) (invoke-with-suggestion 'shm/modify-type-constraint))))
 
 (defun selected-item-value-p (value match)
   ;;Basically check to see if the value selected by the menu matches a given string
