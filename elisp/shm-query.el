@@ -3,12 +3,39 @@
 ;;; Commentary:
 (require 'shm)
 
+(defconst query-program-name "haskell-src-query")
+
+(defun haskell-src-query (query node &optional filePath)
+  (let ((message-log-max nil)
+        (end (shm-node-end node))
+        (start (shm-node-start node))
+        (buffer (current-buffer))
+        (srcPath (if filePath filePath "")))
+    (when (> end (1+ start))
+      (with-temp-buffer
+        (let ((temp-buffer (current-buffer)))
+          (with-current-buffer buffer
+            (condition-case e
+                (call-process-region start end
+                                     query-program-name
+                                     nil
+                                     temp-buffer
+                                     nil
+                                     query srcPath)
+              ((file-error)
+               (error "cannot find haskell-src-query executable")))))
+        (read (buffer-string))))))
+
+(defmacro shm-query (name query)
+  `(defun ,name (node &optional filePath)
+     (haskell-src-query ,query node filePath)))
+
 ;;; Code:
-(defun shm-get-refactors (current-node)
+(defun shm-get-refactors (node)
   "Get a vector of possible refactorings for the (CURRENT-NODE)."
   (shm-lint-ast "decl"
-                (shm-node-start current-node)
-                (shm-node-end current-node)))
+                (shm-node-start node)
+                (shm-node-end node)))
 
 (defun shm-get-parent-top-level-decl (node-pair)
   (shm-node-parent node-pair "Decl SrcSpanInfo"))

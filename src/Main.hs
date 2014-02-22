@@ -1,3 +1,6 @@
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE NoMonomorphismRestriction #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE ExistentialQuantification #-}
 
@@ -10,6 +13,9 @@ module Main (main) where
 
 import Control.Applicative
 import Data.Data
+import Data.Generics.Aliases
+import Data.Generics.Schemes
+import Data.List
 import Data.Maybe
 import Language.Haskell.Exts.Annotated
 import System.Environment
@@ -57,9 +63,8 @@ fromString s | s == "check"  = Just Check
 outputWith :: Action -> String -> String -> IO ()
 outputWith action typ code =
   case typ of
-    "decl" ->
-        output action parseTopLevel code
-    _ -> error "Unknown parser type."
+    "decl" -> output action parseTopLevel code
+    _      -> error "Unknown parser type."
 
 -- | Output AST info for the given Haskell code.
 output :: Action -> Parser -> String -> IO ()
@@ -133,9 +138,8 @@ parseTopLevel mode code =
   D . fix <$> parseModuleWithMode mode code <|>
   D       <$> parseModulePragma mode code
 
-  where
-    fix :: AppFixity ast => ast SrcSpanInfo -> ast SrcSpanInfo
-    fix ast = fromMaybe ast (applyFixities baseFixities ast)
+fix :: AppFixity ast => ast SrcSpanInfo -> ast SrcSpanInfo
+fix ast = fromMaybe ast (applyFixities baseFixities ast) 
 
 
 -- | Parse mode, includes all extensions, doesn't assume any fixities.
@@ -232,3 +236,4 @@ parseModulePragma mode code =
     ParseOk (Module _ _ [p] _ _) -> return p
     ParseOk _ -> ParseFailed noLoc "parseModulePragma"
     ParseFailed x y -> ParseFailed x y
+    

@@ -307,6 +307,28 @@ imagine."
                (error "Unable to find structured-haskell-mode executable! See README for help.")))))
         (read (buffer-string))))))
 
+(defun shm-query-free-vars-from-expression (node)
+  (let ((message-log-max nil)
+        (end (shm-node-end node))
+        (start (shm-node-start node))
+        (buffer (current-buffer)))
+    (when (> end (1+ start))
+      (with-temp-buffer
+        (let ((temp-buffer (current-buffer)))
+          (with-current-buffer buffer
+            (condition-case e
+                (call-process-region start
+                                     end
+                                     shm-program-name
+                                     nil
+                                     temp-buffer
+                                     nil
+                                     "parse"
+                                     "exp")
+              ((file-error)
+               (error "Unable to find structured-haskell-mode executable! See README for help.")))))
+        (read (buffer-string))))))
+
 (defun shm-check-ast (type start end)
   "Check whether the region of TYPE from START to END parses.
 

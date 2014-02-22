@@ -6,6 +6,7 @@
 (require 'shm)
 (require 'shm-queries)
 (require 'shm-refactor)
+(require 'shm-lambda)
 (require 'popup)
 
 (defconst qualify-import "qualify import")
@@ -14,6 +15,28 @@
 (defconst hlint-suggestion "hlint suggestion")
 (defconst create-top-level-function-from-lambda "create top level function from lambda")
 (defconst add-type-constraint "add type constraint")
+
+(defun shm-query-free-vars-from-expression (node)
+  (let ((message-log-max nil)
+        (end (shm-node-end node))
+        (start (shm-node-start node))
+        (buffer (current-buffer)))
+    (when (> end (1+ start))
+      (with-temp-buffer
+        (let ((temp-buffer (current-buffer)))
+          (with-current-buffer buffer
+            (condition-case e
+                (call-process-region start
+                                     end
+                                     shm-program-name
+                                     nil
+                                     temp-buffer
+                                     nil
+                                     "parse"
+                                     "exp")
+              ((file-error)
+               (error "Unable to find structured-haskell-mode executable! See README for help.")))))
+        (read (buffer-string))))))
 
 (if (eq window-system 'x)
     (define-key shm-map (kbd "M-<return>") 'shm/present-actions-for-node)
@@ -24,6 +47,7 @@
          (refactors (shm-get-refactors current-node))
          (refactor (shm-find-refactor-by-name refactors "collapse nested lambdas")))
     (when refactor (shm-invoke-hlint-suggestion refactor))))
+
      
 (defun shm/present-actions-for-node ()
   "Display menu of possible actions for node."
@@ -54,19 +78,28 @@
             (setq shm-parsing-timer
                   (run-with-idle-timer shm-idle-timeout t 'shm-reparsing-timer)))))))
 
+;; collapse any nested lambdas
+;; compare arg list to variables in defintion
+;; turn free variables into application
+;; insert application surrounded by parens
+;; check parent node for redundant parens
+
+
 (defun shm/move-lambda-to-top-level ()
   (let* ((function-name (read-from-minibuffer "function name: "))
          (current-node-pair (shm-current-node-pair))
          (current-node (cdr current-node-pair))
-         (lambda-args (shm-get-lambda-args current-node))
-         (lambda-body (shm-get-lambda-body current-node))
-         (original-syntax (shm-concrete-syntax-for-node current-node))
+         (free-variables (shm-lambda-free-vars current-node))
+         (lambda-args (shm-lambda-args current-node))
+         (lambda-body (shm-query-lambda-body current-node))
          (current-top-level-node (cdr (shm-get-parent-top-level-decl current-node-pair)))
-         (replacement (concat function-name)))
+         (replacement (concat function-name " " free-variables)))
     (shm-replace-node-syntax current-node replacement)
     (goto-char (shm-node-end current-top-level-node))
     (insert ?\n?\n)
-    (insert function-name " " lambda-args " = " lambda-body)
+    (insert function-name " " free-variables 
+                          " " lambda-args 
+                          " = " lambda-body )
     (insert ?\n)))
 
 (defun shm-replace-node-syntax (node replacement-syntax)

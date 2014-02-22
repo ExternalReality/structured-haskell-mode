@@ -20,6 +20,18 @@ executable structured-haskell-mode
   main-is:           Main.hs
   ghc-options:       -O2 -Wall
   hs-source-dirs:    src
-  build-depends:     base >= 4 && < 5,
+  build-depends:     hlint >= 1.8.57,
+                     base >= 4 && < 5,
                      haskell-src-exts >= 1.14.0,
-                     hlint
+                     syb >= 0.4.1
+
+executable haskell-src-query
+  main-is:           HSrcQuery.hs
+  ghc-options:       -O2 -Wall
+  hs-source-dirs:    src
+  build-depends:     process >= 1.1.0.2,
+                     base >= 4 && < 5,
+                     haskell-src-exts >= 1.14.0,
+                     hint == 0.3.3.7,
+                     syb >= 0.4.1
+
